@@ -1,0 +1,239 @@
+        -:    0:Source:diff.f90
+        -:    0:Graph:diff.gcno
+        -:    0:Data:diff.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:! CSC 330
+        -:    2:! Assignment 2 - Diffusion
+        -:    3:!
+        -:    4:! Author: Devin McBryde
+        -:    5:
+        1:    6:program diff
+        -:    7:
+        -:    8:        !needed to suppress unwanted behavior in fortran
+        -:    9:        implicit none
+        -:   10:
+        -:   11:
+        -:   12:        !Determines the number of divisions used n each dimension of the room
+        -:   13:        integer :: N
+        -:   14:        
+        -:   15:        !The declaration of all necessary variables needed for the program 
+        -:   16:        real(kind=8) :: mTotal
+        -:   17:        real(kind=8) :: tot
+        -:   18:        real(kind=8) :: mSpeed
+        -:   19:        real(kind=8) :: hval
+        -:   20:        real(kind=8) :: D
+        -:   21:        real(kind=8) :: conMax
+        -:   22:        real(kind=8) :: conMin
+        -:   23:        real(kind=8) :: tStep
+        -:   24:        real(kind=8) :: time
+        -:   25:
+        -:   26:        real         :: start, endTime
+        -:   27:
+        -:   28:        !A 3 dimensional array that will operate as a rank 3 tensor used 
+        -:   29:        !       to represent the room 
+        -:   30:
+        -:   31:	real(kind=8), dimension(:,:,:), allocatable :: room 
+        -:   32:
+        -:   33:
+        -:   34:        !This array will store the different values of 
+        -:   35:        !       change in concentration between two cells
+        -:   36:        !       The name means concentration difference
+        -:   37:        real(kind=8), dimension(6) :: dCon
+        -:   38:
+        -:   39:        !Every time we check to see the flux of gas between cells
+        -:   40:        !       we would also need to multiply several values,
+        -:   41:        !       slowing the speed of computation. By calculating the
+        -:   42:        !       value once we only need to perform a single
+        -:   43:        !       multiplication each time afterwards for each cell
+        -:   44:        !       instead of several
+        -:   45:        real         :: coefficient
+        -:   46:
+        -:   47:        logical      :: partition
+        -:   48:
+        -:   49:        !declaring the variables that will be used for looping through the room
+        -:   50:        integer      :: i,j,k
+        -:   51:
+        1:   52:        print*, "Enter Number of Divisions for Room "
+        1:   53:        read*, N
+        -:   54:
+        1:   55:        allocate( room(N,N,N))
+        -:   56:
+        1:   57:        call cpu_time(start)
+        -:   58:
+        -:   59:        !initalizing the time to zero
+        1:   60:        time = 0
+        -:   61:
+        -:   62:        !initalizing the variables that describe the state of the room and
+        -:   63:        !       information about the molecules of gas
+        1:   64:        mTotal = 1000000000000000000000.0
+        -:   65:        mSpeed = 250.0
+        1:   66:        hval   = 5.0/N
+        -:   67:        D      = 0.175
+        1:   68:        conMax = 0.0
+        1:   69:        conMin = 0.0
+        1:   70:        tStep  = hval/mSpeed
+        -:   71:
+        -:   72:        !logical type variable that controls whether or not the program will 
+        -:   73:        !       be run with a partition in the room
+        -:   74:        partition = .false.
+        -:   75:
+        1:   76:        coefficient = (tStep*D)/(hval*hval)
+        -:   77:
+        -:   78:        !Following for loops will initialize the room tensor with 0 values 
+        -:   79:        !       when partioning is turned off, otherwise locations that 
+        -:   80:        !       represent the partion in the room will be initialized
+        -:   81:        !       to the value -1
+       31:   82:        do i = 1, N
+      900:   83:                do j = 1, N
+    27000:   84:                        do k = 1, N
+        -:   85:                                !negative values are used when partition is true and will
+        -:   86:                                !       place them half way into the room (when j == (N/2)-1)
+        -:   87:                                !       and half way up (when i >= (N/2)-1)
+        -:   88:                                if (j==((N/2)) .and. i>=((N/2)) .and. partition) then
+        -:   89:                                        room(i,j,k) = -1.0
+        -:   90:                                else
+    27000:   91:                                        room(i,j,k) = 0.0
+        -:   92:                                end if
+        -:   93:                        end do
+        -:   94:                end do
+        -:   95:        end do
+        -:   96:
+        -:   97:        !Initializing the dCon array
+        -:   98:        do i = 1, 6
+        -:   99:                dCon(i) = 0
+        -:  100:        end do
+        -:  101:
+        -:  102:        !This is where we put the gas in the room that will diffuse
+        -:  103:        !       This can be thought of as the top corner of the room
+        1:  104:        room(1,1,1) = mTotal
+        -:  105:
+        -:  106:        !initializing these values so that the loop can start, some values would
+        -:  107:        !       prevent this
+        1:  108:        conMax = mTotal
+        1:  109:        conMin = 1.0
+        -:  110:
+        -:  111:!We want the simulation to stop when the room has become sufficiently
+        -:  112:!       diffuse with the gas, thus we check if the ratio of lowest
+        -:  113:!       concentration to highest is less than 0.99, and when it is 
+        -:  114:!       higher we know the gas has diffused
+    76622:  115:do while ((conMin/conMax) .lt. 0.99)
+        -:  116:        
+        -:  117:        !every step of the program has the time tick by the tStep variable
+        -:  118:        !       tStep is based on qualities of the diffuse material and the room
+    76621:  119:        time = time + tStep
+        -:  120:
+  2375251:  121:        do i = 1, N
+ 71257530:  122:                do j = 1, N
+2137725900:  123:                        do k = 1, N
+        -:  124:                               
+        -:  125:                                !calculate the difference in concentration from flux with each cube face
+        -:  126:                                !       The 6 faces of the cube are represented with different address values
+        -:  127:                                !       and an if is used to determine if it is safe to move molecules
+        -:  128:                                !       if a value = N-1  or 0 then we have hit a face of the cube and do not calculate 
+        -:  129:
+2068767000:  130:                                if (room(i,j,k) .ne. -1) then
+        -:  131:                                       
+2068767000:  132:                                        if (k==N .or. room(i,j,k+1) == -1) then
+        -:  133:                                                dCon(1) = 0
+        -:  134:                                        else
+1999808100:  135:                                                dcon(1) = (room(i,j,k)-room(i,j,k+1)) * coefficient
+1999808100:  136:                                                room(i,j,k) = room(i,j,k) - dCon(1)
+1999808100:  137:                                                room(i,j,k+1) = room(i,j,k+1) + dCon(1)
+        -:  138:                                        end if
+        -:  139:        
+2068767000:  140:                                        if (j==N .or. room(i,j+1,k) == -1) then
+        -:  141:                                                dCon(2) = 0
+        -:  142:                                        else
+1999808100:  143:                                                dcon(2) = (room(i,j,k)-room(i,j+1,k)) * coefficient
+1999808100:  144:                                                room(i,j,k) = room(i,j,k) - dCon(2)
+1999808100:  145:                                                room(i,j+1,k) = room(i,j+1,k) + dCon(2)
+        -:  146:                                        end if
+        -:  147:        
+2068767000:  148:                                        if (i==N .or. room(i+1,j,k) == -1) then
+        -:  149:                                                dCon(3) = 0 
+        -:  150:                                        else
+1999808100:  151:                                                dcon(3) = (room(i,j,k)-room(i+1,j,k)) * coefficient
+1999808100:  152:                                                room(i,j,k) = room(i,j,k) - dCon(3)
+1999808100:  153:                                                room(i+1,j,k) = room(i+1,j,k) + dCon(3)
+        -:  154:                                        end if
+        -:  155:        
+2068767000:  156:                                        if (k==1 .or. room(i,j,k-1) == -1) then
+        -:  157:                                                dCon(4) = 0
+        -:  158:                                        else
+1999808100:  159:                                                dcon(4) = (room(i,j,k)-room(i,j,k-1)) * coefficient
+1999808100:  160:                                                room(i,j,k) = room(i,j,k) - dCon(4)
+1999808100:  161:                                                room(i,j,k-1) = room(i,j,k-1) + dCon(4)
+        -:  162:                                        end if
+        -:  163:        
+2068767000:  164:                                        if (j==1 .or. room(i,j-1,k) == -1) then
+        -:  165:                                                dCon(5) = 0
+        -:  166:                                        else
+1999808100:  167:                                                dcon(5) = (room(i,j,k)-room(i,j-1,k)) * coefficient
+1999808100:  168:                                                room(i,j,k) = room(i,j,k) - dCon(5)
+1999808100:  169:                                                room(i,j-1,k) = room(i,j-1,k) + dCon(5)
+        -:  170:                                        end if
+        -:  171:        
+2068767000:  172:                                        if (i==1 .or. room(i-1,j,k) == -1) then
+        -:  173:                                                dCon(6) = 0
+        -:  174:                                        else
+1999808100:  175:                                                dcon(6) = (room(i,j,k)-room(i-1,j,k)) * coefficient
+1999808100:  176:                                                room(i,j,k) = room(i,j,k) - dCon(6)
+1999808100:  177:                                                room(i-1,j,k) = room(i-1,j,k) + dCon(6)
+        -:  178:                                        end if
+        -:  179:                                end if
+        -:  180:                        end do
+        -:  181:                end do
+        -:  182:        end do
+        -:  183:
+        -:  184:        !Setting up these variables with some set value from the room
+        -:  185:        !       to prime them for the max and min search
+    76621:  186:        conMin = room(1,1,1)
+    76621:  187:        conMax = room(1,1,1)
+        -:  188:
+  2375251:  189:         do i = 1, N
+ 68958900:  190:                do j = 1, N
+2068767000:  191:                        do k = 1, N
+        -:  192:
+2068767000:  193:                        if (room(i,j,k) < conMin .and. room(i,j,k) .ne. -1) then
+ 23091514:  194:                                conMin = room(i,j,k)
+        -:  195:                        end if
+        -:  196:
+2068767000:  197:                        if (room(i,j,k) > conMax .and. room(i,j,k) .ne. -1) then
+    #####:  198:                                conMax = room(i,j,k)
+        -:  199:                        end if
+        -:  200:
+        -:  201:                        end do
+        -:  202:                end do
+        -:  203:        end do
+        -:  204:
+        -:  205:        
+        -:  206:end do
+        -:  207:
+        -:  208:        !To check for matter consistency we check the total amount of molecules in the
+        -:  209:        !       room after the smulation and output it with the starting value
+       31:  210:        do i = 1, N
+      900:  211:                do j = 1, N
+    27000:  212:                        do k = 1, N
+    27000:  213:                                tot = tot + room(i,j,k)
+        -:  214:                        end do
+        -:  215:                end do
+        -:  216:        end do
+        -:  217:
+        1:  218:        call cpu_time(endTime)
+        -:  219:
+        -:  220:        !output of the simulation detailing 5 vaules
+        -:  221:        !       How many molecules did we start with
+        -:  222:        !       How many molecules did we end with
+        -:  223:        !       The total amount of time it took for the room to become diffused
+        -:  224:        !       The minimum concentration in the room
+        -:  225:        !       the maximum concentration in the room
+        1:  226:        print *, "Total molecules starting:", mTotal
+        1:  227:        print *, "Total molecules left:", tot
+        1:  228:        print *, "Time Simulated:", time
+        1:  229:        print *, "min concentration:", conMin
+        1:  230:        print *, "max concentration:", conMax
+        1:  231:        print *, "Wall time:", endTime-start
+        -:  232:
+        -:  233:
+        2:  234:end program diff
