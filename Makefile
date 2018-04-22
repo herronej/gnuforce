@@ -14,3 +14,7 @@ cdiff: cdiff.o
 
 cdff.o: cdiff.c
 	$(CC) cdiff.c -c 
+
+clean :
+	rm *.o
+	rm *.a
