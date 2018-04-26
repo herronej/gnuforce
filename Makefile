@@ -1,20 +1,28 @@
-all : cdiff fdiff
+#Top level makefile
+all : fortran c
 
-fdiff: fdiff.o 
-	$(F90) mpif90 -std=f90 fdiff.o -o fdiff
+#fdiff: fdiff.o 
+#	$(F90) fdiff.o -o fdiff
 
-fdiff.o: fdiff.f90
-	$(F90) fdiff.f90 -c
-
-cdiff: cdiff.o
-	$(CC) mpicc -std=c99 cdiff.o -o cdiff
+#fdiff.o: fdiff.f90
+#	$(F90) fdiff.f90 -c
 
 #cdiff: cdiff.o
-#        $(CC) mpicc -std=c99 cdiff.o -o cdiff -lm
+#	$(CC) cdiff.o -o cdiff
 
-cdff.o: cdiff.c
-	$(CC) cdiff.c -c 
+#cdff.o: cdiff.c
+#	$(CC) cdiff.c -c 
+
+c:
+	cd c && $(MAKE)
+
+fortran:
+	cd fortran && $(MAKE)
 
 clean :
-	rm *.o
-	rm *.a
+	cd fortran && $(MAKE) clean
+	cd c && $(MAKE) clean
+	#rm *.o
+
+#This next target get "made" every time
+.PHONY: fortran c
