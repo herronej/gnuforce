@@ -3,7 +3,7 @@ use cube_mem
 implicit none
 real(kind=8) :: h,hsqrd, lRoom, tStep, dcoef, tAccum,cMax,cMin,urms
 integer :: rank, size, ierr, i, j, k, t0=0, t1=1,it
-integer, parameter :: N=10
+integer, parameter :: N=30
 logical :: partition
     
     allocate(cube(0:N+1,0:N+1,0:N+1), stat=ierr)
@@ -50,23 +50,22 @@ logical :: partition
                     cube(j,i+1,k)*mask(j,i+1,k) + cube(j,i-1,k)*mask(j,i-1,k) + &
                     cube(j,i,k+1)*mask(j,i,k+1) + cube(j,i,k-1)*mask(j,i,k-1) - &
                     dble(mask(j+1,i,k)+mask(j-1,i,k)+mask(j,i-1,k)+mask(j,i+1,k) +&
-                        mask(j,i,k-1)+mask(j,i,k+1))*(cube(j,i,k))) * dcoef / h
+                        mask(j,i,k-1)+mask(j,i,k+1))*(cube(j,i,k))) * 2* dcoef 
                 enddo
             enddo
         enddo
             cMax = maxval(cubeCopy)
             cMin = minval(cubeCopy)
-            print *, cMin,  cMax   ,cMin/cMax
+!            print *, cMin,  cMax   ,cMin/cMax
         do i = 1, N
             do j = 1, N
                 do k = 1 ,N
                     cube(j,i,k) = cubeCopy(j,i,k)
-            !        print *, cube(j,i,k)
+                    !print *, cube(j,i,k)
                 enddo
             enddo
         enddo
     enddo
-    print *, tStep
     print *, sum(cube)
     print *, tAccum
     deallocate(cube)
