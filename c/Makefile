@@ -1,12 +1,16 @@
 #C makefile
-all: serial
+all: diffusion
 
-serial: serial_diffusion.o
-	$(CC) serial_diffusion.o -o serial
+diffusion: diffusion.o
+	$(CC) diffusion.o -o diffusion
   
-serial_diffusion.o: serial_diffusoin.c
-	$(CC) $(CFLAGS) gcc serial_diffusion.c -c
+diffusion.o: diffusion.c
+	$(CC) $(CFLAGS) -std=c99 -O3 diffusion.c -c
+
+#diffusion: diffusion.o
+#	$(CC) diffusion.o -o diffusion
+
   
 clean:
 	rm *.o
-	rm serial
+	rm diffusion
