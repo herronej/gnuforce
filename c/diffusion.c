@@ -51,14 +51,14 @@
 		//Initializing all of the necessary variables for the simulation to start
 		mTotal = 1000000000000000000000.0;
 		mSpeed = 250.0;
-		hval = 5.0/N;
+		hval = (double) 5.0/N;
 		D = 0.175;
 		conMax = mTotal;
-		conMin = 1.0;
-		tStep = hval/mSpeed;
+		conMin = 0.0;
+		tStep = (double) (5.0/mSpeed)/N;
 
 		//declaration of for loop counter variables
-		int i,j,k;
+		//int i,j,k;
 
 		//This represents the total molecules left after running the simulation
 		//	used to check if matter consistency is held
@@ -66,34 +66,46 @@
 
 		//A 3 dimensional array that will operate as a rank 3 tensor used 
 		//	to represent the room 
-		double *room = malloc((N+2)*(N+2)*(N+2)*sizeof(double));
-		double *roomCopy = malloc((N+2)*(N+2)*(N+2)*sizeof(double));
-		int *mask = malloc((N+2)*(N+2)*(N+2)*sizeof(int));
+		double *room = calloc( 1, (N+2)*(N+2)*(N+2)*sizeof(double));
+		double *roomCopy = calloc( 1, (N+2)*(N+2)*(N+2)*sizeof(double));
+		int *mask = calloc( 1, (N+2)*(N+2)*(N+2)*sizeof(int));
 
 		//Following for loops will initialize the room tensor with 0 values 
 		//	when partioning is turned off, otherwise locations that 
 		//	represent the partion in the room will be initialized
 		//	to the value -1
-		for (i=0; i<N+2; i++) {
-			for (j=0; j<N+2; j++){
-				for (k=0; k<N+2; k++){
+		for (int i=1; i<N+1; i++) {
+			for (int j=1; j<N+1; j++){
+				for (int k=1; k<N+1; k++){
 					//negative values are used when partition is true and will
 					//	place them half way into the room (when j == (N/2)-1)
 					//	and half way up (when i >= (N/2)-1)
-					if(j == (N/2)-1 && i >= (N/2)-1 && partition){
+
+/*					if(j == (N/2)-1 && i >= (N/2)-1 && partition){
 						room[ i*N*N+j*N+k ] = -1.0;
 						roomCopy[i*N*N+j*N+k] = -1.0;
 					}else{
 						room[i*N*N+j*N+k] = 0.0;
 						roomCopy[i*N*N+j*N+k] = 0.0;
 					}
-
-					if(i == 0 || j == 0 || k == 0 || i == (N+2) || j == (N+2) || k == (N+2)){
-						mask[i*N*N+j*N+k] = 0;
-					}else{
+*/
+//					if( (i > 0 && i < N+1) || (j > 0 && j < N+1) || (k > 0 && k < N+1) ){
 						mask[i*N*N+j*N+k] = 1;
-					}
+						printf("%d %d %d\n", i,j,k);
+//					}else{
+//						mask[i*N*N+j*N+k] = 0;
+//					}
 
+				}
+			}
+		}
+	
+		for(int i=0;i<N+2;i++){
+			printf("\n");
+			for(int j =0;j<N+2;j++){
+				printf("\n");
+				for(int k=0;k<N+2;k++){
+					printf("%d ", mask[i*N*N+j*N+k]);
 				}
 			}
 		}
@@ -120,9 +132,9 @@
 
 		//Here we total the values stored in all of the cells to check
 		//	for any signifcant amount of lost or gained matter
-		for (i=0; i<N; i++) {
-			for (j=0; j<N; j++){
-				for (k=0; k<N; k++){
+		for (int i=0; i<N; i++) {
+			for (int j=0; j<N; j++){
+				for (int k=0; k<N; k++){
 					tot = tot + room[i*N*N+j*N+k];
 				}
 			}
@@ -169,14 +181,14 @@ void step(double* room, double* roomCopy, int* mask, int N){
 	//	instead of several
 	double coefficient = ((tStep*D) / (hval*hval) );
 
-	printf("coefficient = %f \n",coefficient);
+	//printf("coefficient = %f \n",coefficient);
 
 
 //	printf("value here = %f\n",room[1+1,1,1]); 
 
-	for (i=1; i<N+2; i++){
-		for (j=1; j<N+2; j++){
-			for (k=1; k<N+2; k++){
+	for (i=1; i<N+1; i++){
+		for (j=1; j<N+1; j++){
+			for (k=1; k<N+1; k++){
 /*
 				!Compare this to equation in book.  I also added
 				!the diffusion coefficient which you were missing.
@@ -186,11 +198,20 @@ void step(double* room, double* roomCopy, int* mask, int N){
 						cube(j,i,k+1) + cube(j,i,k-1) - &
 						6.0D0*(cube(j,i,k))) * dcoef / deltas
 */
-				//roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + room[i*N*N+j*N+k+1] * mask[i*N*N+j*N+k+1] + room[i*N*N+j*N+k-1] * mask[i*N*N+j*N+k-1] + room[i*N*N+j*N+k+N] * mask[i*N*N+j*N+k+N] + room[i*N*N+j*N+k-N] * mask[i*N*N+j*N+k-N] + room[i*N*N+j*N+k+(N*N)] * mask[i*N*N+j*N+k+(N*N)] + room[i*N*N+j*N+k-(N*N)] * mask[i*N*N+j*N+k-(N*N)] - (6.0 * room[i*N*N+j*N+k] * coefficient);
+				roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + 
+				(room[i*N*N+j*N+k+1] * mask[i*N*N+j*N+k+1] + room[i*N*N+j*N+k-1] * mask[i*N*N+j*N+k-1] + 
+				room[i*N*N+j*N+k+N] * mask[i*N*N+j*N+k+N] + room[i*N*N+j*N+k-N] * mask[i*N*N+j*N+k-N] + 
+				room[i*N*N+j*N+k+(N*N)] * mask[i*N*N+j*N+k+(N*N)] + room[i*N*N+j*N+k-(N*N)] * mask[i*N*N+j*N+k-(N*N)] -
+				((mask[i*N*N+j*N+k+1] + mask[i*N*N+j*N+k-1] + mask[i*N*N+j*N+k+N] + mask[i*N*N+j*N+k-N] + mask[i*N*N+j*N+k+(N*N)] +  mask[i*N*N+j*N+k-(N*N)])
+				 * room[i*N*N+j*N+k])) * coefficient / (hval);
 
 
-				roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + room[i*N*N+j*N+k+1]  + room[i*N*N+j*N+k-1]  + room[i*N*N+j*N+k+N]  + room[i*N*N+j*N+k-N]  + room[i*N*N+j*N+k+(N*N)]  + room[i*N*N+j*N+k-(N*N)]  - (6.0 * room[i*N*N+j*N+k] * coefficient / (hval*hval));
-
+				/*roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + 
+				(room[i*N*N+1+j*N+k]  + room[i*N*N-1+j*N+k]  + 
+				room[i*N*N+j*N+1+k+N]  + room[i*N*N+j*N-1+k-N]  + 
+				room[i*N*N+j*N+k+(N*N)]  + room[i*N*N+j*N+k-(N*N)]  - 
+				(6.0 * room[i*N*N+j*N+k])) * coefficient / (hval*hval);
+				*/
  
 			}
 		}
@@ -201,8 +222,7 @@ void step(double* room, double* roomCopy, int* mask, int N){
 
 
 
-				printf("value here = %f\n",room[1*N*N+1*N+1]); 
-
+				//printf("value here = %f\n",room[1*N*N+1*N+1]); 
 
 //				printf("value here = %f\n",6.0 * room[1*N*N+1*N+1] * coefficient); 
 
