@@ -16,6 +16,8 @@ logical :: partition
     cube(1,1,1) = 1e21
     dcoef = 0.175 * tstep / deltas
 
+print *, dcoef
+
     do it=1, 1000
         do i = 1, N
             do j = 1, N
@@ -34,7 +36,7 @@ logical :: partition
             do j = 1, N
                 do k = 1 ,N
                     cube(j,i,k) = cubeCopy(j,i,k)
-                    print *, cube(j,i,k)
+!                    print *, cube(j,i,k)
                 enddo
             enddo
         enddo
