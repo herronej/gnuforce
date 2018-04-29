@@ -74,9 +74,9 @@
 		//	when partioning is turned off, otherwise locations that 
 		//	represent the partion in the room will be initialized
 		//	to the value -1
-		for (int i=1; i<N+1; i++) {
-			for (int j=1; j<N+1; j++){
-				for (int k=1; k<N+1; k++){
+		for (int i=0; i<N+2; i++) {
+			for (int j=0; j<N+2; j++){
+				for (int k=0; k<N+2; k++){
 					//negative values are used when partition is true and will
 					//	place them half way into the room (when j == (N/2)-1)
 					//	and half way up (when i >= (N/2)-1)
@@ -90,7 +90,11 @@
 					}
 */
 //					if( (i > 0 && i < N+1) || (j > 0 && j < N+1) || (k > 0 && k < N+1) ){
+			
+					if(i != 0){
 						mask[i*N*N+j*N+k] = 1;
+					}
+
 						printf("%d %d %d\n", i,j,k);
 //					}else{
 //						mask[i*N*N+j*N+k] = 0;
@@ -203,7 +207,7 @@ void step(double* room, double* roomCopy, int* mask, int N){
 				room[i*N*N+j*N+k+N] * mask[i*N*N+j*N+k+N] + room[i*N*N+j*N+k-N] * mask[i*N*N+j*N+k-N] + 
 				room[i*N*N+j*N+k+(N*N)] * mask[i*N*N+j*N+k+(N*N)] + room[i*N*N+j*N+k-(N*N)] * mask[i*N*N+j*N+k-(N*N)] -
 				((mask[i*N*N+j*N+k+1] + mask[i*N*N+j*N+k-1] + mask[i*N*N+j*N+k+N] + mask[i*N*N+j*N+k-N] + mask[i*N*N+j*N+k+(N*N)] +  mask[i*N*N+j*N+k-(N*N)])
-				 * room[i*N*N+j*N+k])) * coefficient / (hval);
+				 * room[i*N*N+j*N+k])) * 2 * coefficient;
 
 
 				/*roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + 

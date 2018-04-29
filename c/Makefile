@@ -1,5 +1,5 @@
 #C makefile
-all: diffusion
+all: diffusion newdiffusion
 
 diffusion: diffusion.o
 	$(CC) diffusion.o -o diffusion
@@ -7,10 +7,10 @@ diffusion: diffusion.o
 diffusion.o: diffusion.c
 	$(CC) $(CFLAGS) -std=c99 -O3 diffusion.c -c
 
-#diffusion: diffusion.o
-#	$(CC) diffusion.o -o diffusion
-
+newdiffusion: newdiffusion.c
+	$(CC) $(CFLAGS) -std=c99 -O3 newdiffusion.c -lm -o newdiffusion
   
 clean:
 	rm *.o
 	rm diffusion
+	rm newdiffusion
