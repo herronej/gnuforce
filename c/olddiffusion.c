@@ -12,7 +12,7 @@
 
 	//declaration of the variables that define the system at the beginning
 	//	and will be used throughout the program
-	double mTotal, currTime, urms, D, rSize, rDiv, tStep, hval, conMax, conMin, hsqrd;
+	double mTotal, currTime, mSpeed, D, rSize, rDiv, tStep, hval, conMax, conMin;
 
 	//An int that will be used in a fashion similar to a boolean to
 	//	control when the partition in activated
@@ -33,7 +33,8 @@
 		scanf(" %c",&pValue);
 
 		int N = nTemp;
-		double lRoom = 5;
+
+		//printf("%c",pValue);
 
 		if(pValue == 'y'){
 			partition = 1;
@@ -49,13 +50,12 @@
 
 		//Initializing all of the necessary variables for the simulation to start
 		mTotal = 1000000000000000000000.0;
-		urms = 250.0;
-		hval = (double) lRoom/N;
+		mSpeed = 250.0;
+		hval = (double) 5.0/N;
 		D = 0.175;
 		conMax = mTotal;
 		conMin = 0.0;
-		tStep = (double) (lRoom/urms)/N;
-		hsqrd = (hval*hval);
+		tStep = (double) (5.0/mSpeed)/N;
 
 		//declaration of for loop counter variables
 		int i,j,k;
@@ -77,25 +77,44 @@
 		for (i=1; i<N+1; i++) {
 			for (j=1; j<N+1; j++){
 				for (k=1; k<N+1; k++){
-						mask[i*(2+N)*(2+N)+j*(2+N)+k] = 1;
+					//negative values are used when partition is true and will
+					//	place them half way into the room (when j == (N/2)-1)
+					//	and half way up (when i >= (N/2)-1)
+
+/*					if(j == (N/2)-1 && i >= (N/2)-1 && partition){
+						room[ i*N*N+j*N+k ] = -1.0;
+						roomCopy[i*N*N+j*N+k] = -1.0;
+					}else{
+						room[i*N*N+j*N+k] = 0.0;
+						roomCopy[i*N*N+j*N+k] = 0.0;
+					}
+*/
+//					if( (i > 0 && i < N+1) || (j > 0 && j < N+1) || (k > 0 && k < N+1) ){
+						mask[i*(N+2)*(N+2)+j*(N+2)+k] = 1;
+						printf("%d %d %d\n", i,j,k);
+//					}else{
+//						mask[i*N*N+j*N+k] = 0;
+//					}
+
 				}
 			}
 		}
 	
-/*		for( i=0;i<N+2;i++){
+		for( i=0;i<N+2;i++){
 			printf("\n");
 			for(j =0;j<N+2;j++){
 				printf("\n");
 				for(k=0;k<N+2;k++){
-					printf("%d ", mask[i*(2+N)*(2+N)+j*(2+N)+k]);
+					printf("%d ", mask[i*(N+2)*(N+2)+j*(N+2)+k]);
 				}
 			}
 		}
-*/
 
 		//Provides the room with the gas material to be dispersed
 		//	to be understood as the "upper corner" of the room
-		room[1*(2+N)*(2+N)+1*(2+N)+1] = mTotal;
+		room[1*N*N+1*N+1] = mTotal;
+
+		printf("room here is = %f\n", room[1*N*N+1*N+1]);
 
 
 		//We want the simulation to stop when the room has become sufficiently
@@ -113,10 +132,10 @@
 
 		//Here we total the values stored in all of the cells to check
 		//	for any signifcant amount of lost or gained matter
-		for (i=0; i<N+2; i++) {
-			for (j=0; j<N+2; j++){
-				for (k=0; k<N+2; k++){
-					tot = tot + room[i*(2+N)*(2+N)+j*(2+N)+k];
+		for (i=0; i<N; i++) {
+			for (j=0; j<N; j++){
+				for (k=0; k<N; k++){
+					tot = tot + room[i*N*N+j*N+k];
 				}
 			}
 		}
@@ -139,8 +158,6 @@
 		printf("Wall time: %f\n", seconds);
 		//free the memory held by the array
 		free(room);
-		free(roomCopy);
-		free(mask);
 	}
 
 void step(double* room, double* roomCopy, int* mask, int N){
@@ -162,44 +179,74 @@ void step(double* room, double* roomCopy, int* mask, int N){
 	//	value once we only need to perform a single
 	//	multiplication each time afterwards for each cell
 	//	instead of several
-	double coefficient = ((tStep*D) / (hsqrd) );
+	double coefficient = ((tStep*D) / (hval*hval) );
+
+	//printf("coefficient = %f \n",coefficient);
+
+
+//	printf("value here = %f\n",room[1+1,1,1]); 
 
 	for (i=1; i<N+1; i++){
 		for (j=1; j<N+1; j++){
 			for (k=1; k<N+1; k++){
-				
-				roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] = room[i*(2+N)*(2+N)+j*(2+N)+k] + 
-				(room[i*(2+N)*(2+N)+j*(2+N)+k+1] * mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + room[i*(2+N)*(2+N)+j*(2+N)+k-1] * mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + 
-				room[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + room[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + 
-				room[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] + room[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] -
-				((mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] +  mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))])
-				 * room[i*(2+N)*(2+N)+j*(2+N)+k])) * 2 * coefficient;
+/*
+				!Compare this to equation in book.  I also added
+				!the diffusion coefficient which you were missing.
+				cubeCopy[j,i,k] = cube(j,i,k) + (&
+						cube(j+1,i,k) + cube(j-1,i,k) + &
+						cube(j,i+1,k) + cube(j,i-1,k) + &
+						cube(j,i,k+1) + cube(j,i,k-1) - &
+						6.0D0*(cube(j,i,k))) * dcoef / deltas
+*/
+				roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + 
+				(room[i*N*N+j*N+k+1] * mask[i*N*N+j*N+k+1] + room[i*N*N+j*N+k-1] * mask[i*N*N+j*N+k-1] + 
+				room[i*N*N+j*N+k+N] * mask[i*N*N+j*N+k+N] + room[i*N*N+j*N+k-N] * mask[i*N*N+j*N+k-N] + 
+				room[i*N*N+j*N+k+(N*N)] * mask[i*N*N+j*N+k+(N*N)] + room[i*N*N+j*N+k-(N*N)] * mask[i*N*N+j*N+k-(N*N)] -
+				((mask[i*N*N+j*N+k+1] + mask[i*N*N+j*N+k-1] + mask[i*N*N+j*N+k+N] + mask[i*N*N+j*N+k-N] + mask[i*N*N+j*N+k+(N*N)] +  mask[i*N*N+j*N+k-(N*N)])
+				 * room[i*N*N+j*N+k])) * coefficient / (hval);
 
 
+				/*roomCopy[i*N*N+j*N+k] = room[i*N*N+j*N+k] + 
+				(room[i*N*N+1+j*N+k]  + room[i*N*N-1+j*N+k]  + 
+				room[i*N*N+j*N+1+k+N]  + room[i*N*N+j*N-1+k-N]  + 
+				room[i*N*N+j*N+k+(N*N)]  + room[i*N*N+j*N+k-(N*N)]  - 
+				(6.0 * room[i*N*N+j*N+k])) * coefficient / (hval*hval);
+				*/
+ 
 			}
 		}
 	}
 
+				//printf("what about here = %f\n", roomCopy[1,1,1]);
+//				printf("value here = %f\n",room[1,1,1] + room[1+1,1,1] * mask[1+1,1,1] + room[1-1,1,1] * mask[1-1,1,1] + room[1,1+1,1] * mask[1,1+1,1] + room[1,1-1,1] * mask[1,1-1,k] + room[1,1,1+1] * mask[1,1,1+1] + room[1,1,1-1] * mask[1,1,1-1] - 6.0 * room[1,1,1] * coefficient); 
 
+
+
+				//printf("value here = %f\n",room[1*N*N+1*N+1]); 
+
+//				printf("value here = %f\n",6.0 * room[1*N*N+1*N+1] * coefficient); 
 
 	//after resetting the concentration values we then find the values of min and max
 	//	in order to tell when the loop shall end
-	conMin = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
-	conMax = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
+	conMin = roomCopy[1*N*N+1*N+1];
+	conMax = roomCopy[1*N*N+1*N+1];
 
-	for (i=1; i<N+1; i++) {
-		for (j=1; j<N+1; j++){
-			for (k=1; k<N+1; k++){
-				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] < conMin) {
-					conMin = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+//	printf("room start value = %f, roomCopy start value = %f\n",room[1*N*N+1*N*1+1], roomCopy[1*N*N+1*N*1+1]);
+
+	for (i=1; i<N+2; i++) {
+		for (j=1; j<N+2; j++){
+			for (k=1; k<N+2; k++){
+				if (roomCopy[i*N*N+j*N+k] < conMin && roomCopy[i*N*N+j*N+k] != -1) {
+					conMin = roomCopy[i*N*N+j*N+k];
 				}
-				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] > conMax) {
-					conMax = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+				if (roomCopy[i*N*N+j*N+k] > conMax && roomCopy[i*N*N+j*N+k] != -1) {
+					conMax = roomCopy[i*N*N+j*N+k];
 				}	
 			}
 		}
 	}
 
+//	printf("conMin/conMax = %f\n",conMin/conMax );
 
 }
 
