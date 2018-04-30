@@ -105,7 +105,56 @@
 		double* temp;
 		while((conMin/conMax) < 0.99){
 			currTime = currTime + tStep;
-			step(room, roomCopy, mask, N);
+
+//			step(room, roomCopy, mask, N);
+
+
+
+	//Every time we check to see the flux of gas between cells
+	//	we would also need to multiply several values,
+	//	slowing the speed of computation. By calculating the
+	//	value once we only need to perform a single
+	//	multiplication each time afterwards for each cell
+	//	instead of several
+	double coefficient = ((tStep*D) / (hsqrd) );
+
+	for (i=1; i<N+1; i++){
+		for (j=1; j<N+1; j++){
+			for (k=1; k<N+1; k++){
+				
+				roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] = room[i*(2+N)*(2+N)+j*(2+N)+k] + 
+				(room[i*(2+N)*(2+N)+j*(2+N)+k+1] * mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + room[i*(2+N)*(2+N)+j*(2+N)+k-1] * mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + 
+				room[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + room[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + 
+				room[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] + room[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] -
+				((mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] +  mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))])
+				 * room[i*(2+N)*(2+N)+j*(2+N)+k])) * 2 * coefficient;
+
+
+			}
+		}
+	}
+
+
+
+	//after resetting the concentration values we then find the values of min and max
+	//	in order to tell when the loop shall end
+	conMin = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
+	conMax = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
+
+	for (i=1; i<N+1; i++) {
+		for (j=1; j<N+1; j++){
+			for (k=1; k<N+1; k++){
+				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] < conMin) {
+					conMin = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+				}
+				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] > conMax) {
+					conMax = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+				}	
+			}
+		}
+	}
+
+
 			temp = room;
 			room = roomCopy;
 			roomCopy = temp;
