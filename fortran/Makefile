@@ -1,16 +1,16 @@
 #Fortran makefile
-all : cube_mem.o serial_diffusion
-
+F90=gfortran
+FFLAGS= -O3 -fopenmp
+all : cube_mem.o omp_diffusion
 #serial: serial_diffusion.o 
 #	$(F90) serial_diffusion.o -o serial 
+omp_diffusion : omp_diffusion.f90
+	$(F90) $(FFLAGS) cube_mem.o omp_diffusion.f90 -o omp_diffusion
 
 cube_mem.o : cube_mem.f90
-	$(F90) $(FFLAGS) gfortran -c cube_mem.f90
- 
-serial_diffusion : serial_diffusion.f90
-	$(F90) $(FFLAGS) gfortran cube_mem.o serial_diffusion.f90 -o serial_diffusion
+	$(F90) $(FFLAGS) -c cube_mem.f90
  
 clean:
 	rm *.o
 	rm *.mod
-	rm serial_diffusion
+	rm omp_diffusion
