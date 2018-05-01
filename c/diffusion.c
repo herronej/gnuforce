@@ -9,6 +9,7 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<time.h>
+#include<omp.h>
 
 	//declaration of the variables that define the system at the beginning
 	//	and will be used throughout the program
@@ -77,21 +78,27 @@
 		for (i=1; i<N+1; i++) {
 			for (j=1; j<N+1; j++){
 				for (k=1; k<N+1; k++){
+		
+					if(k == ((N+2)/2) && i >= ((N+2)/2)-1 && partition){
+						mask[i*(2+N)*(2+N)+j*(2+N)+k] = 0;
+					}else{
 						mask[i*(2+N)*(2+N)+j*(2+N)+k] = 1;
+					}
+
 				}
 			}
 		}
 	
-/*		for( i=0;i<N+2;i++){
-			printf("\n");
+		for( i=0;i<N+2;i++){
+//			printf("\n");
 			for(j =0;j<N+2;j++){
-				printf("\n");
+//				printf("\n");
 				for(k=0;k<N+2;k++){
-					printf("%d ", mask[i*(2+N)*(2+N)+j*(2+N)+k]);
+//					printf("%d ", mask[i*(2+N)*(2+N)+j*(2+N)+k]);
 				}
 			}
 		}
-*/
+
 
 		//Provides the room with the gas material to be dispersed
 		//	to be understood as the "upper corner" of the room
@@ -105,7 +112,63 @@
 		double* temp;
 		while((conMin/conMax) < 0.99){
 			currTime = currTime + tStep;
-			step(room, roomCopy, mask, N);
+
+//			step(room, roomCopy, mask, N);
+
+
+
+	//Every time we check to see the flux of gas between cells
+	//	we would also need to multiply several values,
+	//	slowing the speed of computation. By calculating the
+	//	value once we only need to perform a single
+	//	multiplication each time afterwards for each cell
+	//	instead of several
+	double coefficient = ((tStep*D) / (hsqrd) );
+
+
+		omp_set_num_threads(1);
+
+#pragma omp parallel shared(room,roomCopy,N) private(i,j,k)
+{
+	#pragma omp for
+	for (i=1; i<N+1; i++){
+		for (j=1; j<N+1; j++){
+
+			for (k=1; k<N+1; k++){
+				
+				roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] = room[i*(2+N)*(2+N)+j*(2+N)+k] + 
+				(room[i*(2+N)*(2+N)+j*(2+N)+k+1] * mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + room[i*(2+N)*(2+N)+j*(2+N)+k-1] * mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + 
+				room[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + room[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + 
+				room[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] + room[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] -
+				((mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] +  mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))])
+				 * room[i*(2+N)*(2+N)+j*(2+N)+k])) * 2 * coefficient;
+
+
+			}
+		}
+	}
+}
+
+
+	//after resetting the concentration values we then find the values of min and max
+	//	in order to tell when the loop shall end
+	conMin = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
+	conMax = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
+
+	for (i=1; i<N+1; i++) {
+		for (j=1; j<N+1; j++){
+			for (k=1; k<N+1; k++){
+				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] < conMin) {
+					conMin = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+				}
+				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] > conMax) {
+					conMax = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
+				}	
+			}
+		}
+	}
+
+
 			temp = room;
 			room = roomCopy;
 			roomCopy = temp;
@@ -142,64 +205,4 @@
 		free(roomCopy);
 		free(mask);
 	}
-
-void step(double* room, double* roomCopy, int* mask, int N){
-
-	//The vaules used to iterate through the room array
-	//	using nested for loops
-	int i,j,k;
-	double* temp;
-
-	//This array will store the different values of 
-	//	change in concentration between two cells
-	//	The name means concentration difference
-	double dCon[6];
-	for(i=0;i<6;i++){dCon[i] = 0.0;}
-
-	//Every time we check to see the flux of gas between cells
-	//	we would also need to multiply several values,
-	//	slowing the speed of computation. By calculating the
-	//	value once we only need to perform a single
-	//	multiplication each time afterwards for each cell
-	//	instead of several
-	double coefficient = ((tStep*D) / (hsqrd) );
-
-	for (i=1; i<N+1; i++){
-		for (j=1; j<N+1; j++){
-			for (k=1; k<N+1; k++){
-				
-				roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] = room[i*(2+N)*(2+N)+j*(2+N)+k] + 
-				(room[i*(2+N)*(2+N)+j*(2+N)+k+1] * mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + room[i*(2+N)*(2+N)+j*(2+N)+k-1] * mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + 
-				room[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + room[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] * mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + 
-				room[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] + room[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] * mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))] -
-				((mask[i*(2+N)*(2+N)+j*(2+N)+k+1] + mask[i*(2+N)*(2+N)+j*(2+N)+k-1] + mask[i*(2+N)*(2+N)+j*(2+N)+k+(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k-(2+N)] + mask[i*(2+N)*(2+N)+j*(2+N)+k+((2+N)*(2+N))] +  mask[i*(2+N)*(2+N)+j*(2+N)+k-((2+N)*(2+N))])
-				 * room[i*(2+N)*(2+N)+j*(2+N)+k])) * 2 * coefficient;
-
-
-			}
-		}
-	}
-
-
-
-	//after resetting the concentration values we then find the values of min and max
-	//	in order to tell when the loop shall end
-	conMin = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
-	conMax = roomCopy[1*(2+N)*(2+N)+1*(2+N)+1];
-
-	for (i=1; i<N+1; i++) {
-		for (j=1; j<N+1; j++){
-			for (k=1; k<N+1; k++){
-				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] < conMin) {
-					conMin = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
-				}
-				if (roomCopy[i*(2+N)*(2+N)+j*(2+N)+k] > conMax) {
-					conMax = roomCopy[i*(2+N)*(2+N)+j*(2+N)+k];
-				}	
-			}
-		}
-	}
-
-
-}
 
