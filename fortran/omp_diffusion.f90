@@ -1,9 +1,10 @@
 program mpi_diffusion
 use cube_mem
 implicit none
-real(kind=8) :: h,hsqrd, lRoom, tStep, dcoef, tAccum,cMax,cMin,urms
-integer :: rank, ierr, i, j, k, t0=0, t1=1,it, numThreads
-integer, parameter:: N=10
+real(kind=8) :: h,hsqrd, lRoom, tStep, dcoef,tAccum,cMax,cMin,urms,tStart,tEnd,&
+                timeSpent
+integer :: rank, ierr, i, j, k, t0=0, t1=1,it, numThreads,tSec, tMin, tHr
+integer, parameter:: N=20
 logical :: partition
 character :: selection
 logical :: isPart = .false.
@@ -18,6 +19,8 @@ logical :: isPart = .false.
     if(selection .eq. 'y') then
         isPart = .true.
     endif
+    print *, "How many threads? "
+    read *,numThreads
     
     if(isPart) then 
         do i = 1, N
@@ -55,7 +58,7 @@ logical :: isPart = .false.
 !                print *,""
 !        enddo
 
-
+    call cpu_time(tStart)
     lRoom = 5.d0
     urms = 250.d0
     tStep = (lRoom/urms)/dble(N)
@@ -68,7 +71,7 @@ logical :: isPart = .false.
     cMin = 0
     tAccum = 0
 
-    call omp_set_num_threads(4)
+    call omp_set_num_threads(numThreads)
     do while(cMin/cMax <= 0.99)
         tAccum = tAccum + tStep
         !$OMP PARALLEL DO private(i,j,k) 
@@ -96,8 +99,20 @@ logical :: isPart = .false.
             enddo
         enddo
     enddo
-    print *, sum(cube)
-    print *, tAccum
+    call cpu_time(tEnd)
+    timeSpent = tEnd-tStart
+    tSec = mod(int(timeSpent), 60)
+    tMin = timeSpent / 60
+    tHr = timeSpent / 3600 
+
+    print *, ""
+    write( *, "(A17)", advance = "no")"Molecular Sum: "
+    print "(es20.1)",sum(cube)
+    print "(a4, a20, a20, a20, a20, a20, a20)", "Dim", "Max Init", "MinInit", "Max End","Min End", "T Step",&
+          &"Sim Time"
+    print "(i3.0, es20.1, es20.1, es20.1, es20.1, es20.1,f20.2,i5,a1,i2,a1,i2)", N, 1E21, 0.0, cMax,&
+          & cMin, tStep, tAccum  
+
     deallocate(cube)
     deallocate(cubeCopy) 
     deallocate(mask) 
