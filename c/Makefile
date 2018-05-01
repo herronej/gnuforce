@@ -1,11 +1,10 @@
 #C makefile
+CC=gcc
+CFLAGS= -fopenmp -std=c99 -O3
 all: diffusion
 
-diffusion: diffusion.o
-	$(CC) diffusion.o -o diffusion
-  
-diffusion.o: diffusion.c
-	$(CC) $(CFLAGS) -std=c99 -O3 diffusion.c -c
+diffusion: diffusion.c
+	$(CC) $(CFLAGS) -o diffusion  diffusion.c
 
 #diffusion: diffusion.o
 #	$(CC) diffusion.o -o diffusion
