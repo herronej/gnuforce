@@ -1,6 +1,6 @@
 #C makefile
 CC=gcc
-CFLAGS= -fopenmp -std=c99 -O3
+CFLAGS= -fopenmp -std=c99 -O3 -march=native -mtune=native
 all: diffusion
 
 diffusion: diffusion.c
@@ -11,5 +11,5 @@ diffusion: diffusion.c
 
   
 clean:
-	rm *.o
 	rm diffusion
+	rm *.o

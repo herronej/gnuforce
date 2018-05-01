@@ -90,11 +90,11 @@
 		}
 	
 		for( i=0;i<N+2;i++){
-			printf("\n");
+//			printf("\n");
 			for(j =0;j<N+2;j++){
-				printf("\n");
+//				printf("\n");
 				for(k=0;k<N+2;k++){
-					printf("%d ", mask[i*(2+N)*(2+N)+j*(2+N)+k]);
+//					printf("%d ", mask[i*(2+N)*(2+N)+j*(2+N)+k]);
 				}
 			}
 		}
