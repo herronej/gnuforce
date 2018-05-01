@@ -1,6 +1,6 @@
 #C makefile
 CC=gcc
-CFLAGS= -fopenmp -std=c99 -O3 -march=native -mtune=native
+CFLAGS= -fopenmp -std=c99 -O3 
 all: diffusion
 
 diffusion: diffusion.c
